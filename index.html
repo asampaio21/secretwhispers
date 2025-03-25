@@ -9,6 +9,10 @@
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1041/1041916.png">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
     <style>
         body {
             background-color: #000000;
@@ -207,6 +211,116 @@
             font-size: 12px;
             display: none;
         }
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .photo-item {
+            position: relative;
+            padding-bottom: 100%;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .photo-item img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-upload {
+            text-align: center;
+            padding: 20px;
+            border: 2px dashed rgba(255,255,255,0.2);
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .photo-preview {
+            max-width: 300px;
+            max-height: 300px;
+            margin: 20px auto;
+            display: none;
+            position: relative;
+        }
+
+        .photo-preview img {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+
+        .photo-preview .remove-preview {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            padding: 0;
+            margin: 0;
+        }
+
+        .big-upload-button {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 20px 40px;
+            font-size: 18px;
+            margin: 20px auto;
+            display: block;
+            width: auto;
+            min-width: 200px;
+            transition: all 0.3s ease;
+        }
+
+        .big-upload-button:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+            opacity: 0.8;
+        }
+
+        #photoInput {
+            display: none;
+        }
+
+        .upload-button {
+            display: inline-block;
+            margin: 10px;
+        }
+
+        .new-item-animation {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 <body>
@@ -227,6 +341,7 @@
     <div class="tabs">
         <button class="tab active" onclick="showTab('send')" id="sendTab">SEND GOSSIP</button>
         <button class="tab" onclick="showTab('view')" id="viewTab">VIEW GOSSIPS</button>
+        <button class="tab" onclick="showTab('photos')" id="photosTab">PHOTOS</button>
     </div>
     
     <div id="sendContent" class="content active">
@@ -260,6 +375,31 @@
         </div>
     </div>
 
+    <div id="photosContent" class="content">
+        <div id="photoPasswordScreen" class="password-screen">
+            <h3>ÁREA RESTRITA</h3>
+            <div class="password-input">
+                <input type="password" id="photoPasswordInput" placeholder="DIGITE A SENHA SECRETA" class="form-control">
+                <div id="photoPasswordError" class="error-message">Senha incorreta!</div>
+            </div>
+            <button onclick="checkPhotoPassword()">VER FOTOS</button>
+        </div>
+        <div id="photoSection" style="display: none;">
+            <div class="photo-upload">
+                <input type="file" id="photoInput" accept="image/*" onchange="handlePhotoUpload(event)">
+                <div class="upload-icon">📸</div>
+                <button onclick="document.getElementById('photoInput').click()" class="big-upload-button">ADICIONAR FOTO</button>
+                <div id="photoPreview" class="photo-preview">
+                    <img id="previewImage" src="" alt="Preview">
+                    <button class="remove-preview" onclick="removePreview()">×</button>
+                </div>
+            </div>
+            <div id="photoGrid" class="photo-grid">
+                <!-- As fotos serão inseridas aqui -->
+            </div>
+        </div>
+    </div>
+
     <script>
         const translations = {
             en: {
@@ -273,7 +413,11 @@
                 passwordTitle: "RESTRICTED AREA",
                 passwordPlaceholder: "ENTER SECRET PASSWORD",
                 accessButton: "ACCESS GOSSIPS",
-                passwordError: "Wrong password!"
+                passwordError: "Wrong password!",
+                photosTab: "PHOTOS",
+                uploadPhoto: "UPLOAD PHOTO",
+                viewPhotos: "VIEW PHOTOS",
+                addPhoto: "ADD PHOTO",
             },
             pt: {
                 headerText: "XOXO, VOCÊ SABE QUE ME AMA",
@@ -286,7 +430,11 @@
                 passwordTitle: "ÁREA RESTRITA",
                 passwordPlaceholder: "DIGITE A SENHA SECRETA",
                 accessButton: "ACESSAR FOFOCAS",
-                passwordError: "Senha incorreta!"
+                passwordError: "Senha incorreta!",
+                photosTab: "FOTOS",
+                uploadPhoto: "ENVIAR FOTO",
+                viewPhotos: "VER FOTOS",
+                addPhoto: "ADICIONAR FOTO",
             },
             es: {
                 headerText: "XOXO, SABES QUE ME AMAS",
@@ -299,7 +447,11 @@
                 passwordTitle: "ÁREA RESTRINGIDA",
                 passwordPlaceholder: "INGRESE LA CONTRASEÑA SECRETA",
                 accessButton: "ACCEDER A CHISMES",
-                passwordError: "¡Contraseña incorrecta!"
+                passwordError: "¡Contraseña incorrecta!",
+                photosTab: "FOTOS",
+                uploadPhoto: "ENVIAR FOTO",
+                viewPhotos: "VER FOTOS",
+                addPhoto: "AÑADIR FOTO",
             },
             fr: {
                 headerText: "XOXO, TU SAIS QUE TU M'AIMES",
@@ -312,7 +464,11 @@
                 passwordTitle: "ZONE RESTREINTE",
                 passwordPlaceholder: "ENTREZ LE MOT DE PASSE SECRET",
                 accessButton: "ACCÉDER AUX POTINS",
-                passwordError: "Mot de passe incorrect!"
+                passwordError: "Mot de passe incorrect!",
+                photosTab: "PHOTOS",
+                uploadPhoto: "ENVOYER PHOTO",
+                viewPhotos: "VOIR PHOTOS",
+                addPhoto: "AJOUTER PHOTO",
             }
         };
 
@@ -329,6 +485,10 @@
             document.getElementById('passwordInput').placeholder = currentLang.passwordPlaceholder;
             document.querySelector('.password-screen button').textContent = currentLang.accessButton;
             document.getElementById('passwordError').textContent = currentLang.passwordError;
+            document.getElementById('photosTab').textContent = currentLang.photosTab;
+            document.getElementById('uploadPhoto').textContent = currentLang.uploadPhoto;
+            document.getElementById('viewPhotos').textContent = currentLang.viewPhotos;
+            document.querySelector('.big-upload-button').textContent = currentLang.addPhoto;
         }
 
         function showTab(tabName) {
@@ -340,6 +500,8 @@
 
             if (tabName === 'view') {
                 checkAuth();
+            } else if (tabName === 'photos') {
+                checkPhotoAuth();
             }
         }
 
@@ -349,25 +511,23 @@
             const remetente = document.getElementById('remetente').value || 'Anônimo';
             const mensagem = document.getElementById('mensagem').value;
 
-            // Salvar a fofoca no localStorage
-            const gossips = JSON.parse(localStorage.getItem('gossips') || '[]');
-            gossips.push({
+            // Salvar no Firebase
+            db.collection('gossips').add({
                 sender: remetente,
                 message: mensagem,
-                date: new Date().toISOString()
+                date: new Date()
+            })
+            .then(() => {
+                document.getElementById('messageForm').reset();
+                alert('Fofoca enviada com sucesso!');
+                showTab('view');
+                loadGossips();
+            })
+            .catch(error => {
+                console.error("Erro ao enviar fofoca: ", error);
+                alert('Erro ao enviar fofoca. Tente novamente.');
             });
-            localStorage.setItem('gossips', JSON.stringify(gossips));
 
-            // Limpar o formulário
-            document.getElementById('messageForm').reset();
-            
-            // Mostrar mensagem de sucesso
-            alert('Fofoca enviada com sucesso!');
-            
-            // Mudar para a aba de visualização e atualizar a lista
-            showTab('view');
-            loadGossips();
-            
             return false;
         }
 
@@ -393,26 +553,35 @@
             return Math.floor(seconds) + " segundos atrás";
         }
 
-        // Função para carregar as fofocas do localStorage
+        // Função para carregar fofocas do Firebase
         function loadGossips() {
-            const gossips = JSON.parse(localStorage.getItem('gossips') || '[]');
             const gossipList = document.getElementById('gossipList');
             
-            if (gossips.length === 0) {
-                gossipList.innerHTML = '<div class="empty-state">Nenhuma fofoca ainda... Seja o primeiro a contar!</div>';
-                return;
-            }
-            
-            gossipList.innerHTML = '';
-            gossips.reverse().forEach(gossip => {
-                const gossipElement = document.createElement('div');
-                gossipElement.className = 'gossip-item';
-                gossipElement.innerHTML = `
-                    <p>"${gossip.message}"</p>
-                    <div class="gossip-meta">De: ${gossip.sender} • ${timeAgo(new Date(gossip.date))}</div>
-                `;
-                gossipList.appendChild(gossipElement);
-            });
+            db.collection('gossips')
+                .orderBy('date', 'desc')
+                .get()
+                .then((querySnapshot) => {
+                    if (querySnapshot.empty) {
+                        gossipList.innerHTML = '<div class="empty-state">Nenhuma fofoca ainda... Seja o primeiro a contar!</div>';
+                        return;
+                    }
+                    
+                    gossipList.innerHTML = '';
+                    querySnapshot.forEach((doc) => {
+                        const gossip = doc.data();
+                        const gossipElement = document.createElement('div');
+                        gossipElement.className = 'gossip-item';
+                        gossipElement.innerHTML = `
+                            <p>"${gossip.message}"</p>
+                            <div class="gossip-meta">De: ${gossip.sender} • ${timeAgo(gossip.date.toDate())}</div>
+                        `;
+                        gossipList.appendChild(gossipElement);
+                    });
+                })
+                .catch(error => {
+                    console.error("Erro ao carregar fofocas: ", error);
+                    gossipList.innerHTML = '<div class="empty-state">Erro ao carregar fofocas. Tente novamente.</div>';
+                });
         }
 
         // Senha para acessar as fofocas (você pode mudar para a senha que quiser)
@@ -428,7 +597,7 @@
                 passwordScreen.style.display = 'none';
                 gossipList.style.display = 'block';
                 loadGossips();
-                // Salvar estado de autenticação
+                setupRealtimeGossips();
                 sessionStorage.setItem('authenticated', 'true');
             } else {
                 passwordError.style.display = 'block';
@@ -436,6 +605,32 @@
                     passwordError.style.display = 'none';
                 }, 3000);
             }
+        }
+
+        function setupRealtimeGossips() {
+            db.collection('gossips')
+                .orderBy('date', 'desc')
+                .onSnapshot((snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === "added") {
+                            const gossip = change.doc.data();
+                            const gossipList = document.getElementById('gossipList');
+                            
+                            const gossipElement = document.createElement('div');
+                            gossipElement.className = 'gossip-item new-item-animation';
+                            gossipElement.innerHTML = `
+                                <p>"${gossip.message}"</p>
+                                <div class="gossip-meta">De: ${gossip.sender} • ${timeAgo(gossip.date.toDate())}</div>
+                            `;
+
+                            if (gossipList.firstChild) {
+                                gossipList.insertBefore(gossipElement, gossipList.firstChild);
+                            } else {
+                                gossipList.appendChild(gossipElement);
+                            }
+                        }
+                    });
+                });
         }
 
         // Verificar autenticação ao carregar a página e ao mudar de aba
@@ -448,9 +643,172 @@
                 passwordScreen.style.display = 'none';
                 gossipList.style.display = 'block';
                 loadGossips();
+                setupRealtimeGossips();
             } else {
                 passwordScreen.style.display = 'flex';
                 gossipList.style.display = 'none';
+            }
+        }
+
+        // Adicionar verificação de autenticação ao carregar a página
+        document.addEventListener('DOMContentLoaded', () => {
+            loadGossips();
+            checkAuth();
+        });
+
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDFWWP6HgFoFrM8PkfJAR0oXBTvVlGgYyY",
+            authDomain: "secretwhispers-xxxxx.firebaseapp.com",
+            projectId: "secretwhispers-xxxxx",
+            storageBucket: "secretwhispers-xxxxx.appspot.com",
+            messagingSenderId: "xxxxxxxxxxxxx",
+            appId: "1:xxxxxxxxxxxxx:web:xxxxxxxxxxxxxxxxxxxxx"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        // Função para mostrar preview da foto
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Mostrar preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('previewImage').src = e.target.result;
+                document.getElementById('photoPreview').style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+
+            // Upload para o Firebase
+            const storageRef = storage.ref();
+            const photoRef = storageRef.child(`photos/${Date.now()}_${file.name}`);
+
+            photoRef.put(file).then((snapshot) => {
+                return snapshot.ref.getDownloadURL();
+            }).then((downloadURL) => {
+                return db.collection('photos').add({
+                    url: downloadURL,
+                    date: new Date(),
+                    sender: document.getElementById('remetente').value || 'Anônimo'
+                });
+            }).then(() => {
+                alert('Foto enviada com sucesso!');
+                loadPhotos();
+                removePreview();
+            }).catch(error => {
+                console.error("Erro ao enviar foto: ", error);
+                alert('Erro ao enviar foto. Tente novamente.');
+                removePreview();
+            });
+        }
+
+        // Função para remover preview
+        function removePreview() {
+            document.getElementById('photoPreview').style.display = 'none';
+            document.getElementById('previewImage').src = '';
+            document.getElementById('photoInput').value = '';
+        }
+
+        // Função para carregar fotos
+        function loadPhotos() {
+            const photoGrid = document.getElementById('photoGrid');
+            
+            db.collection('photos')
+                .orderBy('date', 'desc')
+                .get()
+                .then((querySnapshot) => {
+                    if (querySnapshot.empty) {
+                        photoGrid.innerHTML = '<div class="empty-state">Nenhuma foto ainda... Seja o primeiro a enviar!</div>';
+                        return;
+                    }
+                    
+                    photoGrid.innerHTML = '';
+                    querySnapshot.forEach((doc) => {
+                        const photo = doc.data();
+                        const photoElement = document.createElement('div');
+                        photoElement.className = 'photo-item';
+                        photoElement.innerHTML = `
+                            <img src="${photo.url}" alt="Gossip Photo">
+                            <div class="photo-caption">
+                                ${timeAgo(photo.date.toDate())}
+                            </div>
+                        `;
+                        photoGrid.appendChild(photoElement);
+                    });
+                })
+                .catch(error => {
+                    console.error("Erro ao carregar fotos: ", error);
+                    photoGrid.innerHTML = '<div class="empty-state">Erro ao carregar fotos. Tente novamente.</div>';
+                });
+        }
+
+        function checkPhotoPassword() {
+            const password = document.getElementById('photoPasswordInput').value;
+            const passwordScreen = document.getElementById('photoPasswordScreen');
+            const photoSection = document.getElementById('photoSection');
+            const passwordError = document.getElementById('photoPasswordError');
+
+            if (password === SENHA_SECRETA) {
+                passwordScreen.style.display = 'none';
+                photoSection.style.display = 'block';
+                loadPhotos();
+                setupRealtimePhotos();
+                sessionStorage.setItem('photoAuthenticated', 'true');
+            } else {
+                passwordError.style.display = 'block';
+                setTimeout(() => {
+                    passwordError.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function setupRealtimePhotos() {
+            db.collection('photos')
+                .orderBy('date', 'desc')
+                .onSnapshot((snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === "added") {
+                            const photo = change.doc.data();
+                            const photoGrid = document.getElementById('photoGrid');
+                            
+                            const photoElement = document.createElement('div');
+                            photoElement.className = 'photo-item new-item-animation';
+                            photoElement.innerHTML = `
+                                <img src="${photo.url}" alt="Gossip Photo">
+                                <div class="photo-caption">
+                                    ${timeAgo(photo.date.toDate())}
+                                </div>
+                            `;
+
+                            if (photoGrid.firstChild) {
+                                photoGrid.insertBefore(photoElement, photoGrid.firstChild);
+                            } else {
+                                photoGrid.appendChild(photoElement);
+                            }
+                        }
+                    });
+                });
+        }
+
+        // Verificar autenticação das fotos
+        function checkPhotoAuth() {
+            const isAuthenticated = sessionStorage.getItem('photoAuthenticated') === 'true';
+            const passwordScreen = document.getElementById('photoPasswordScreen');
+            const photoSection = document.getElementById('photoSection');
+
+            if (isAuthenticated) {
+                passwordScreen.style.display = 'none';
+                photoSection.style.display = 'block';
+                loadPhotos();
+                setupRealtimePhotos();
+            } else {
+                passwordScreen.style.display = 'flex';
+                photoSection.style.display = 'none';
             }
         }
 
