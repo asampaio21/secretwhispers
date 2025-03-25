@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SecretWhispers</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <style>
+        body {
+            background-color: #000000;
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 40px;
+            text-transform: uppercase;
+            line-height: 1.6;
+        }
+        .language-selector {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .language-selector select {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 5px 10px;
+            font-family: 'Montserrat', sans-serif;
+            cursor: pointer;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: rgba(255,255,255,0.6);
+            font-family: 'Montserrat', sans-serif;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+        .tab.active {
+            color: white;
+            border-bottom: 2px solid white;
+        }
+        .tab:hover {
+            color: white;
+        }
+        .content {
+            display: none;
+        }
+        .content.active {
+            display: block;
+        }
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 54px;
+            text-shadow: 2px 2px 4px rgba(255,255,255,0.1);
+            letter-spacing: 8px;
+            margin: 0;
+        }
+        .header p {
+            font-size: 14px;
+            letter-spacing: 4px;
+            color: rgba(255,255,255,0.8);
+            margin-top: 10px;
+        }
+        .post-box {
+            background-color: rgba(255,255,255,0.05);
+            padding: 30px;
+            margin: 30px 0;
+            border: none;
+            border-radius: 2px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .new-post {
+            background-color: rgba(255,255,255,0.05);
+            padding: 30px;
+            margin: 30px 0;
+            border: none;
+            border-radius: 2px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        textarea, input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            background-color: rgba(255,255,255,0.05);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 2px;
+            font-family: 'Montserrat', sans-serif;
+            box-sizing: border-box;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+        button {
+            background-color: transparent;
+            color: white;
+            padding: 15px 30px;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 2px;
+            cursor: pointer;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: white;
+            color: black;
+        }
+        .gossip-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .gossip-item {
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 20px 0;
+        }
+        .gossip-item:last-child {
+            border-bottom: none;
+        }
+        .gossip-meta {
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            margin-top: 10px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255,255,255,0.5);
+        }
+        .password-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+        }
+        .password-input {
+            max-width: 300px;
+            margin: 20px auto;
+        }
+        .error-message {
+            color: #ff4444;
+            margin-top: 10px;
+            font-size: 12px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="language-selector">
+        <select onchange="changeLanguage(this.value)">
+            <option value="en">English</option>
+            <option value="pt">Português</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+        </select>
+    </div>
+
+    <div class="header">
+        <h1>SecretWhispers</h1>
+        <p id="headerText">XOXO, YOU KNOW YOU LOVE ME</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="showTab('send')" id="sendTab">SEND GOSSIP</button>
+        <button class="tab" onclick="showTab('view')" id="viewTab">VIEW GOSSIPS</button>
+    </div>
+    
+    <div id="sendContent" class="content active">
+        <div class="new-post">
+            <h3 id="newGossipTitle">NEW GOSSIP</h3>
+            <form id="messageForm" onsubmit="return sendEmail(event)">
+                <div class="form-group">
+                    <label id="senderLabel">WHO'S TELLING? (OPTIONAL)</label>
+                    <input type="text" id="remetente" name="nome" placeholder="YOUR NAME OR LEAVE IT BLANK">
+                </div>
+                <div class="form-group">
+                    <label id="messageLabel">TELL ME EVERYTHING</label>
+                    <textarea id="mensagem" name="segredo" placeholder="SPILL THE HOTTEST SECRETS..." required rows="5"></textarea>
+                </div>
+                <button type="submit" id="submitButton">SPREAD GOSSIP</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="viewContent" class="content">
+        <div id="passwordScreen" class="password-screen">
+            <h3>ÁREA RESTRITA</h3>
+            <div class="password-input">
+                <input type="password" id="passwordInput" placeholder="DIGITE A SENHA SECRETA" class="form-control">
+                <div id="passwordError" class="error-message">Senha incorreta!</div>
+            </div>
+            <button onclick="checkPassword()">ACESSAR FOFOCAS</button>
+        </div>
+        <div id="gossipList" class="gossip-list" style="display: none;">
+            <!-- As fofocas serão inseridas aqui dinamicamente -->
+        </div>
+    </div>
+
+    <script>
+        const translations = {
+            en: {
+                headerText: "XOXO, YOU KNOW YOU LOVE ME",
+                sendTab: "SEND GOSSIP",
+                viewTab: "VIEW GOSSIPS",
+                newGossipTitle: "NEW GOSSIP",
+                senderLabel: "WHO'S TELLING? (OPTIONAL)",
+                messageLabel: "TELL ME EVERYTHING",
+                submitButton: "SPREAD GOSSIP",
+                passwordTitle: "RESTRICTED AREA",
+                passwordPlaceholder: "ENTER SECRET PASSWORD",
+                accessButton: "ACCESS GOSSIPS",
+                passwordError: "Wrong password!"
+            },
+            pt: {
+                headerText: "XOXO, VOCÊ SABE QUE ME AMA",
+                sendTab: "ENVIAR FOFOCA",
+                viewTab: "VER FOFOCAS",
+                newGossipTitle: "NOVA FOFOCA",
+                senderLabel: "QUEM ESTÁ CONTANDO? (OPCIONAL)",
+                messageLabel: "ME CONTE TUDO",
+                submitButton: "ESPALHAR FOFOCA",
+                passwordTitle: "ÁREA RESTRITA",
+                passwordPlaceholder: "DIGITE A SENHA SECRETA",
+                accessButton: "ACESSAR FOFOCAS",
+                passwordError: "Senha incorreta!"
+            },
+            es: {
+                headerText: "XOXO, SABES QUE ME AMAS",
+                sendTab: "ENVIAR CHISME",
+                viewTab: "VER CHISMES",
+                newGossipTitle: "NUEVO CHISME",
+                senderLabel: "¿QUIÉN CUENTA? (OPCIONAL)",
+                messageLabel: "CUÉNTAMELO TODO",
+                submitButton: "DIFUNDIR CHISME",
+                passwordTitle: "ÁREA RESTRINGIDA",
+                passwordPlaceholder: "INGRESE LA CONTRASEÑA SECRETA",
+                accessButton: "ACCEDER A CHISMES",
+                passwordError: "¡Contraseña incorrecta!"
+            },
+            fr: {
+                headerText: "XOXO, TU SAIS QUE TU M'AIMES",
+                sendTab: "ENVOYER POTIN",
+                viewTab: "VOIR POTINS",
+                newGossipTitle: "NOUVEAU POTIN",
+                senderLabel: "QUI RACONTE? (OPTIONNEL)",
+                messageLabel: "DIS-MOI TOUT",
+                submitButton: "RÉPANDRE LE POTIN",
+                passwordTitle: "ZONE RESTREINTE",
+                passwordPlaceholder: "ENTREZ LE MOT DE PASSE SECRET",
+                accessButton: "ACCÉDER AUX POTINS",
+                passwordError: "Mot de passe incorrect!"
+            }
+        };
+
+        function changeLanguage(lang) {
+            document.getElementById('headerText').textContent = translations[lang].headerText;
+            document.getElementById('sendTab').textContent = translations[lang].sendTab;
+            document.getElementById('viewTab').textContent = translations[lang].viewTab;
+            document.getElementById('newGossipTitle').textContent = translations[lang].newGossipTitle;
+            document.getElementById('senderLabel').textContent = translations[lang].senderLabel;
+            document.getElementById('messageLabel').textContent = translations[lang].messageLabel;
+            document.getElementById('submitButton').textContent = translations[lang].submitButton;
+            const currentLang = translations[lang];
+            document.querySelector('.password-screen h3').textContent = currentLang.passwordTitle;
+            document.getElementById('passwordInput').placeholder = currentLang.passwordPlaceholder;
+            document.querySelector('.password-screen button').textContent = currentLang.accessButton;
+            document.getElementById('passwordError').textContent = currentLang.passwordError;
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.content').forEach(content => content.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            
+            document.getElementById(tabName + 'Content').classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+
+            if (tabName === 'view') {
+                checkAuth();
+            }
+        }
+
+        function sendEmail(e) {
+            e.preventDefault();
+            
+            const remetente = document.getElementById('remetente').value || 'Anônimo';
+            const mensagem = document.getElementById('mensagem').value;
+
+            // Salvar a fofoca no localStorage
+            const gossips = JSON.parse(localStorage.getItem('gossips') || '[]');
+            gossips.push({
+                sender: remetente,
+                message: mensagem,
+                date: new Date().toISOString()
+            });
+            localStorage.setItem('gossips', JSON.stringify(gossips));
+
+            // Limpar o formulário
+            document.getElementById('messageForm').reset();
+            
+            // Mostrar mensagem de sucesso
+            alert('Fofoca enviada com sucesso!');
+            
+            // Mudar para a aba de visualização e atualizar a lista
+            showTab('view');
+            loadGossips();
+            
+            return false;
+        }
+
+        // Função para formatar a data
+        function timeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + " anos atrás";
+            
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + " meses atrás";
+            
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + " dias atrás";
+            
+            interval = seconds / 3600;
+            if (interval > 1) return Math.floor(interval) + " horas atrás";
+            
+            interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + " minutos atrás";
+            
+            return Math.floor(seconds) + " segundos atrás";
+        }
+
+        // Função para carregar as fofocas do localStorage
+        function loadGossips() {
+            const gossips = JSON.parse(localStorage.getItem('gossips') || '[]');
+            const gossipList = document.getElementById('gossipList');
+            
+            if (gossips.length === 0) {
+                gossipList.innerHTML = '<div class="empty-state">Nenhuma fofoca ainda... Seja o primeiro a contar!</div>';
+                return;
+            }
+            
+            gossipList.innerHTML = '';
+            gossips.reverse().forEach(gossip => {
+                const gossipElement = document.createElement('div');
+                gossipElement.className = 'gossip-item';
+                gossipElement.innerHTML = `
+                    <p>"${gossip.message}"</p>
+                    <div class="gossip-meta">De: ${gossip.sender} • ${timeAgo(new Date(gossip.date))}</div>
+                `;
+                gossipList.appendChild(gossipElement);
+            });
+        }
+
+        // Senha para acessar as fofocas (você pode mudar para a senha que quiser)
+        const SENHA_SECRETA = "gossipgirl";
+
+        function checkPassword() {
+            const password = document.getElementById('passwordInput').value;
+            const passwordScreen = document.getElementById('passwordScreen');
+            const gossipList = document.getElementById('gossipList');
+            const passwordError = document.getElementById('passwordError');
+
+            if (password === SENHA_SECRETA) {
+                passwordScreen.style.display = 'none';
+                gossipList.style.display = 'block';
+                loadGossips();
+                // Salvar estado de autenticação
+                sessionStorage.setItem('authenticated', 'true');
+            } else {
+                passwordError.style.display = 'block';
+                setTimeout(() => {
+                    passwordError.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Verificar autenticação ao carregar a página e ao mudar de aba
+        function checkAuth() {
+            const isAuthenticated = sessionStorage.getItem('authenticated') === 'true';
+            const passwordScreen = document.getElementById('passwordScreen');
+            const gossipList = document.getElementById('gossipList');
+
+            if (isAuthenticated) {
+                passwordScreen.style.display = 'none';
+                gossipList.style.display = 'block';
+                loadGossips();
+            } else {
+                passwordScreen.style.display = 'flex';
+                gossipList.style.display = 'none';
+            }
+        }
+
+        // Adicionar verificação de autenticação ao carregar a página
+        document.addEventListener('DOMContentLoaded', () => {
+            loadGossips();
+            checkAuth();
+        });
+    </script>
+</body>
+</html> 
