@@ -584,7 +584,7 @@
                 });
         }
 
-        // Senha para acessar as fofocas (você pode mudar para a senha que quiser)
+        // Senha para acessar as fofocas
         const SENHA_SECRETA = "gossipgirl";
 
         function checkPassword() {
@@ -598,7 +598,7 @@
                 gossipList.style.display = 'block';
                 loadGossips();
                 setupRealtimeGossips();
-                sessionStorage.setItem('authenticated', 'true');
+                localStorage.setItem('authenticated', 'true');
             } else {
                 passwordError.style.display = 'block';
                 setTimeout(() => {
@@ -633,9 +633,8 @@
                 });
         }
 
-        // Verificar autenticação ao carregar a página e ao mudar de aba
         function checkAuth() {
-            const isAuthenticated = sessionStorage.getItem('authenticated') === 'true';
+            const isAuthenticated = localStorage.getItem('authenticated') === 'true';
             const passwordScreen = document.getElementById('passwordScreen');
             const gossipList = document.getElementById('gossipList');
 
@@ -650,12 +649,6 @@
             }
         }
 
-        // Adicionar verificação de autenticação ao carregar a página
-        document.addEventListener('DOMContentLoaded', () => {
-            loadGossips();
-            checkAuth();
-        });
-
         // Configuração do Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyDFWWP6HgFoFrM8PkfJAR0oXBTvVlGgYyY",
@@ -666,10 +659,32 @@
             appId: "1:xxxxxxxxxxxxx:web:xxxxxxxxxxxxxxxxxxxxx"
         };
 
-        // Inicializar Firebase
+        // Inicializar Firebase com persistência
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const storage = firebase.storage();
+
+        // Habilitar persistência do Firestore
+        db.enablePersistence()
+            .catch((err) => {
+                if (err.code == 'failed-precondition') {
+                    console.log('Múltiplas abas abertas');
+                } else if (err.code == 'unimplemented') {
+                    console.log('Navegador não suporta persistência');
+                }
+            });
+
+        // Carregar dados quando a página iniciar
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            checkPhotoAuth();
+        });
+
+        // Reconectar ao Firebase se a conexão cair
+        window.addEventListener('online', () => {
+            loadGossips();
+            loadPhotos();
+        });
 
         // Função para mostrar preview da foto
         function handlePhotoUpload(event) {
@@ -758,7 +773,7 @@
                 photoSection.style.display = 'block';
                 loadPhotos();
                 setupRealtimePhotos();
-                sessionStorage.setItem('photoAuthenticated', 'true');
+                localStorage.setItem('photoAuthenticated', 'true');
             } else {
                 passwordError.style.display = 'block';
                 setTimeout(() => {
@@ -795,9 +810,8 @@
                 });
         }
 
-        // Verificar autenticação das fotos
         function checkPhotoAuth() {
-            const isAuthenticated = sessionStorage.getItem('photoAuthenticated') === 'true';
+            const isAuthenticated = localStorage.getItem('photoAuthenticated') === 'true';
             const passwordScreen = document.getElementById('photoPasswordScreen');
             const photoSection = document.getElementById('photoSection');
 
@@ -811,12 +825,6 @@
                 photoSection.style.display = 'none';
             }
         }
-
-        // Adicionar verificação de autenticação ao carregar a página
-        document.addEventListener('DOMContentLoaded', () => {
-            loadGossips();
-            checkAuth();
-        });
     </script>
 </body>
 </html> 
