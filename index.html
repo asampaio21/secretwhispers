@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="SecretWhispers">
+    <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1041/1041916.png">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -321,6 +323,115 @@
                 transform: translateY(0);
             }
         }
+
+        .message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 4px;
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 14px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .message.success {
+            background-color: rgba(40, 167, 69, 0.9);
+        }
+
+        .message.error {
+            background-color: rgba(220, 53, 69, 0.9);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .video-item {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* Proporção 16:9 */
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .video-item video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-item .video-meta {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 12px;
+        }
+
+        .content-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .content-tab {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .content-tab.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .upload-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .upload-section h2 {
+            margin-bottom: 15px;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -339,68 +450,85 @@
     </div>
 
     <div class="tabs">
-        <button class="tab active" onclick="showTab('send')" id="sendTab">SEND GOSSIP</button>
-        <button class="tab" onclick="showTab('view')" id="viewTab">VIEW GOSSIPS</button>
-        <button class="tab" onclick="showTab('photos')" id="photosTab">PHOTOS</button>
+        <button onclick="showTab('send')" class="tab-button active">ENVIAR</button>
+        <button onclick="showTab('view')" class="tab-button">VER TUDO</button>
     </div>
     
-    <div id="sendContent" class="content active">
-        <div class="new-post">
-            <h3 id="newGossipTitle">NEW GOSSIP</h3>
+    <div id="sendContent" class="tab-content active">
+        <div class="form-container">
+            <h2>ENVIAR NOVO CONTEÚDO</h2>
             <form id="messageForm" onsubmit="return sendEmail(event)">
                 <div class="form-group">
-                    <label id="senderLabel">WHO'S TELLING? (OPTIONAL)</label>
-                    <input type="text" id="remetente" name="nome" placeholder="YOUR NAME OR LEAVE IT BLANK">
+                    <label for="remetente">QUEM ESTÁ CONTANDO?</label>
+                    <input type="text" id="remetente" name="remetente" required>
                 </div>
                 <div class="form-group">
-                    <label id="messageLabel">TELL ME EVERYTHING</label>
-                    <textarea id="mensagem" name="segredo" placeholder="SPILL THE HOTTEST SECRETS..." required rows="5"></textarea>
+                    <label for="mensagem">FOFOCA</label>
+                    <textarea id="mensagem" name="mensagem" required></textarea>
                 </div>
-                <button type="submit" id="submitButton">SPREAD GOSSIP</button>
+                <button type="submit" class="submit-button">ENVIAR FOFOCO</button>
             </form>
+
+            <div class="upload-section">
+                <h2>ENVIAR FOTO</h2>
+                <input type="file" id="photoInput" accept="image/*" style="display: none;">
+                <button onclick="document.getElementById('photoInput').click()" class="upload-button">
+                    <i class="fas fa-camera"></i> ENVIAR FOTO
+                </button>
+            </div>
+
+            <div class="upload-section">
+                <h2>ENVIAR VÍDEO</h2>
+                <input type="file" id="videoInput" accept="video/*" style="display: none;">
+                <button onclick="document.getElementById('videoInput').click()" class="upload-button">
+                    <i class="fas fa-video"></i> ENVIAR VÍDEO
+                </button>
+            </div>
         </div>
     </div>
 
-    <div id="viewContent" class="content">
+    <div id="viewContent" class="tab-content">
         <div id="passwordScreen" class="password-screen">
-            <h3>ÁREA RESTRITA</h3>
-            <div class="password-input">
-                <input type="password" id="passwordInput" placeholder="DIGITE A SENHA SECRETA" class="form-control">
-                <div id="passwordError" class="error-message">Senha incorreta!</div>
+            <h2>DIGITE A SENHA PARA VER O CONTEÚDO</h2>
+            <input type="password" id="passwordInput" placeholder="SENHA">
+            <button onclick="checkPassword()">VER CONTEÚDO</button>
+            <p id="passwordError" class="error-message" style="display: none;">Senha incorreta!</p>
+        </div>
+        <div id="contentSection" style="display: none;">
+            <div class="content-tabs">
+                <button onclick="showContentTab('gossips')" class="content-tab active">FOFOCAS</button>
+                <button onclick="showContentTab('photos')" class="content-tab">FOTOS</button>
+                <button onclick="showContentTab('videos')" class="content-tab">VÍDEOS</button>
             </div>
-            <button onclick="checkPassword()">ACESSAR FOFOCAS</button>
-        </div>
-        <div id="gossipList" class="gossip-list" style="display: none;">
-            <!-- As fofocas serão inseridas aqui dinamicamente -->
-        </div>
-    </div>
 
-    <div id="photosContent" class="content">
-        <div id="photoPasswordScreen" class="password-screen">
-            <h3>ÁREA RESTRITA</h3>
-            <div class="password-input">
-                <input type="password" id="photoPasswordInput" placeholder="DIGITE A SENHA SECRETA" class="form-control">
-                <div id="photoPasswordError" class="error-message">Senha incorreta!</div>
+            <div id="gossipsContent" class="content-section active">
+                <div id="gossipList" class="gossip-list"></div>
             </div>
-            <button onclick="checkPhotoPassword()">VER FOTOS</button>
-        </div>
-        <div id="photoSection" style="display: none;">
-            <div class="photo-upload">
-                <input type="file" id="photoInput" accept="image/*" onchange="handlePhotoUpload(event)">
-                <div class="upload-icon">📸</div>
-                <button onclick="document.getElementById('photoInput').click()" class="big-upload-button">ADICIONAR FOTO</button>
-                <div id="photoPreview" class="photo-preview">
-                    <img id="previewImage" src="" alt="Preview">
-                    <button class="remove-preview" onclick="removePreview()">×</button>
-                </div>
+
+            <div id="photosContent" class="content-section">
+                <div id="photoGrid" class="photo-grid"></div>
             </div>
-            <div id="photoGrid" class="photo-grid">
-                <!-- As fotos serão inseridas aqui -->
+
+            <div id="videosContent" class="content-section">
+                <div id="videoGrid" class="video-grid"></div>
             </div>
         </div>
     </div>
 
     <script>
+        // Registrar o Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registrado com sucesso:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('Falha ao registrar o ServiceWorker:', error);
+                    });
+            });
+        }
+
         const translations = {
             en: {
                 headerText: "XOXO, YOU KNOW YOU LOVE ME",
@@ -492,41 +620,81 @@
         }
 
         function showTab(tabName) {
-            document.querySelectorAll('.content').forEach(content => content.classList.remove('active'));
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            // Esconder todas as abas
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
             
-            document.getElementById(tabName + 'Content').classList.add('active');
-            document.getElementById(tabName + 'Tab').classList.add('active');
-
+            // Remover classe active de todos os botões
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Mostrar a aba selecionada
+            document.getElementById(tabName + 'Content').style.display = 'block';
+            
+            // Adicionar classe active ao botão selecionado
+            event.target.classList.add('active');
+            
+            // Se for a aba de visualização, verificar autenticação
             if (tabName === 'view') {
                 checkAuth();
-            } else if (tabName === 'photos') {
-                checkPhotoAuth();
             }
         }
 
-        function sendEmail(e) {
+        // Função para enviar fofoca
+        async function sendEmail(e) {
             e.preventDefault();
             
-            const remetente = document.getElementById('remetente').value || 'Anônimo';
-            const mensagem = document.getElementById('mensagem').value;
+            const remetente = document.getElementById('remetente').value.trim();
+            const mensagem = document.getElementById('mensagem').value.trim();
 
-            // Salvar no Firebase
-            db.collection('gossips').add({
-                sender: remetente,
-                message: mensagem,
-                date: new Date()
-            })
-            .then(() => {
+            // Validação do remetente
+            if (!remetente) {
+                showMessage('Por favor, digite quem está contando!', 'error');
+                return false;
+            }
+
+            // Validação da mensagem
+            if (!mensagem) {
+                showMessage('Por favor, digite uma fofoca!', 'error');
+                return false;
+            }
+
+            // Desabilitar o botão para evitar envios duplicados
+            const submitButton = document.querySelector('.submit-button');
+            submitButton.disabled = true;
+            submitButton.textContent = 'ENVIANDO...';
+
+            try {
+                // Salvar no Firebase
+                const docRef = await db.collection('gossips').add({
+                    sender: remetente,
+                    message: mensagem,
+                    date: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                console.log('Fofoca enviada com sucesso! ID:', docRef.id);
                 document.getElementById('messageForm').reset();
-                alert('Fofoca enviada com sucesso!');
+                
+                // Mostrar notificação de sucesso
+                showMessage('Fofoca enviada com sucesso!', 'success');
+                
+                // Mudar para a aba de visualização
                 showTab('view');
-                loadGossips();
-            })
-            .catch(error => {
+                
+                // Verificar autenticação para ver o conteúdo
+                checkAuth();
+            } catch (error) {
                 console.error("Erro ao enviar fofoca: ", error);
-                alert('Erro ao enviar fofoca. Tente novamente.');
-            });
+                showMessage('Erro ao enviar fofoca. Tente novamente.', 'error');
+            } finally {
+                // Reabilitar o botão após 3 segundos
+                setTimeout(() => {
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'ENVIAR FOFOCO';
+                }, 3000);
+            }
 
             return false;
         }
@@ -553,15 +721,47 @@
             return Math.floor(seconds) + " segundos atrás";
         }
 
-        // Função para carregar fofocas do Firebase
+        // Função para mostrar mensagens
+        function showMessage(message, type) {
+            console.log('Mostrando mensagem:', message, type);
+            
+            // Remover mensagens anteriores
+            document.querySelectorAll('.message').forEach(msg => msg.remove());
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = message;
+            document.body.appendChild(messageDiv);
+            
+            // Adicionar animação de entrada
+            messageDiv.style.animation = 'slideIn 0.3s ease-out';
+            
+            // Remover após 3 segundos
+            setTimeout(() => {
+                messageDiv.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => {
+                    messageDiv.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // Função para carregar fofocas
         function loadGossips() {
+            console.log('Iniciando carregamento de fofocas...');
             const gossipList = document.getElementById('gossipList');
+            
+            if (!gossipList) {
+                console.error('Elemento gossipList não encontrado!');
+                return;
+            }
             
             db.collection('gossips')
                 .orderBy('date', 'desc')
                 .get()
                 .then((querySnapshot) => {
+                    console.log('Fofocas carregadas:', querySnapshot.size);
                     if (querySnapshot.empty) {
+                        console.log('Nenhuma fofoca encontrada');
                         gossipList.innerHTML = '<div class="empty-state">Nenhuma fofoca ainda... Seja o primeiro a contar!</div>';
                         return;
                     }
@@ -569,6 +769,7 @@
                     gossipList.innerHTML = '';
                     querySnapshot.forEach((doc) => {
                         const gossip = doc.data();
+                        console.log('Fofoca:', gossip);
                         const gossipElement = document.createElement('div');
                         gossipElement.className = 'gossip-item';
                         gossipElement.innerHTML = `
@@ -584,22 +785,37 @@
                 });
         }
 
-        // Senha para acessar as fofocas
-        const SENHA_SECRETA = "gossipgirl";
-
+        // Função para verificar senha
         function checkPassword() {
+            console.log('Verificando senha...');
             const password = document.getElementById('passwordInput').value;
             const passwordScreen = document.getElementById('passwordScreen');
-            const gossipList = document.getElementById('gossipList');
+            const contentSection = document.getElementById('contentSection');
             const passwordError = document.getElementById('passwordError');
 
-            if (password === SENHA_SECRETA) {
+            console.log('Senha digitada:', password);
+
+            if (password === 'gru') {
+                console.log('Senha correta! Mostrando conteúdo...');
                 passwordScreen.style.display = 'none';
-                gossipList.style.display = 'block';
+                contentSection.style.display = 'block';
+                localStorage.setItem('isAuthenticated', 'true');
+                
+                // Carregar conteúdo
+                console.log('Carregando fofocas...');
                 loadGossips();
+                console.log('Carregando fotos...');
+                loadPhotos();
+                console.log('Carregando vídeos...');
+                loadVideos();
+                
+                // Configurar atualização em tempo real
+                console.log('Configurando atualização em tempo real...');
                 setupRealtimeGossips();
-                localStorage.setItem('authenticated', 'true');
+                setupRealtimePhotos();
+                setupRealtimeVideos();
             } else {
+                console.log('Senha incorreta!');
                 passwordError.style.display = 'block';
                 setTimeout(() => {
                     passwordError.style.display = 'none';
@@ -607,83 +823,66 @@
             }
         }
 
-        function setupRealtimeGossips() {
-            db.collection('gossips')
-                .orderBy('date', 'desc')
-                .onSnapshot((snapshot) => {
-                    snapshot.docChanges().forEach((change) => {
-                        if (change.type === "added") {
-                            const gossip = change.doc.data();
-                            const gossipList = document.getElementById('gossipList');
-                            
-                            const gossipElement = document.createElement('div');
-                            gossipElement.className = 'gossip-item new-item-animation';
-                            gossipElement.innerHTML = `
-                                <p>"${gossip.message}"</p>
-                                <div class="gossip-meta">De: ${gossip.sender} • ${timeAgo(gossip.date.toDate())}</div>
-                            `;
-
-                            if (gossipList.firstChild) {
-                                gossipList.insertBefore(gossipElement, gossipList.firstChild);
-                            } else {
-                                gossipList.appendChild(gossipElement);
-                            }
-                        }
-                    });
-                });
-        }
-
         function checkAuth() {
-            const isAuthenticated = localStorage.getItem('authenticated') === 'true';
+            const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
             const passwordScreen = document.getElementById('passwordScreen');
-            const gossipList = document.getElementById('gossipList');
+            const contentSection = document.getElementById('contentSection');
 
             if (isAuthenticated) {
                 passwordScreen.style.display = 'none';
-                gossipList.style.display = 'block';
+                contentSection.style.display = 'block';
                 loadGossips();
+                loadPhotos();
+                loadVideos();
                 setupRealtimeGossips();
-            } else {
-                passwordScreen.style.display = 'flex';
-                gossipList.style.display = 'none';
+                setupRealtimePhotos();
+                setupRealtimeVideos();
             }
         }
 
         // Configuração do Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyDFWWP6HgFoFrM8PkfJAR0oXBTvVlGgYyY",
-            authDomain: "secretwhispers-xxxxx.firebaseapp.com",
-            projectId: "secretwhispers-xxxxx",
-            storageBucket: "secretwhispers-xxxxx.appspot.com",
-            messagingSenderId: "xxxxxxxxxxxxx",
-            appId: "1:xxxxxxxxxxxxx:web:xxxxxxxxxxxxxxxxxxxxx"
+            authDomain: "secretwhispers-1c0c1.firebaseapp.com",
+            projectId: "secretwhispers-1c0c1",
+            storageBucket: "secretwhispers-1c0c1.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdef1234567890"
         };
 
-        // Inicializar Firebase com persistência
-        firebase.initializeApp(firebaseConfig);
+        // Inicializa o Firebase
+        try {
+            firebase.initializeApp(firebaseConfig);
+            console.log('Firebase inicializado com sucesso!');
+        } catch (error) {
+            console.error('Erro ao inicializar Firebase:', error);
+        }
+
         const db = firebase.firestore();
         const storage = firebase.storage();
 
-        // Habilitar persistência do Firestore
-        db.enablePersistence()
-            .catch((err) => {
-                if (err.code == 'failed-precondition') {
-                    console.log('Múltiplas abas abertas');
-                } else if (err.code == 'unimplemented') {
-                    console.log('Navegador não suporta persistência');
-                }
+        // Verifica se o Firebase está conectado
+        db.collection('test').get()
+            .then(() => {
+                console.log('Firebase conectado com sucesso!');
+            })
+            .catch((error) => {
+                console.error('Erro ao conectar com Firebase:', error);
+                showMessage('Erro ao conectar com o servidor. Por favor, tente novamente mais tarde.', 'error');
             });
 
         // Carregar dados quando a página iniciar
         document.addEventListener('DOMContentLoaded', () => {
             checkAuth();
             checkPhotoAuth();
+            checkVideoAuth();
         });
 
         // Reconectar ao Firebase se a conexão cair
         window.addEventListener('online', () => {
             loadGossips();
             loadPhotos();
+            loadVideos();
         });
 
         // Função para mostrar preview da foto
@@ -762,18 +961,19 @@
                 });
         }
 
+        // Verificar senha das fotos
         function checkPhotoPassword() {
             const password = document.getElementById('photoPasswordInput').value;
             const passwordScreen = document.getElementById('photoPasswordScreen');
             const photoSection = document.getElementById('photoSection');
             const passwordError = document.getElementById('photoPasswordError');
 
-            if (password === SENHA_SECRETA) {
+            if (password === 'gru') {
                 passwordScreen.style.display = 'none';
                 photoSection.style.display = 'block';
+                localStorage.setItem('isPhotoAuthenticated', 'true');
                 loadPhotos();
                 setupRealtimePhotos();
-                localStorage.setItem('photoAuthenticated', 'true');
             } else {
                 passwordError.style.display = 'block';
                 setTimeout(() => {
@@ -811,7 +1011,7 @@
         }
 
         function checkPhotoAuth() {
-            const isAuthenticated = localStorage.getItem('photoAuthenticated') === 'true';
+            const isAuthenticated = localStorage.getItem('isPhotoAuthenticated') === 'true';
             const passwordScreen = document.getElementById('photoPasswordScreen');
             const photoSection = document.getElementById('photoSection');
 
@@ -824,6 +1024,197 @@
                 passwordScreen.style.display = 'flex';
                 photoSection.style.display = 'none';
             }
+        }
+
+        // Função para verificar senha dos vídeos
+        function checkVideoPassword() {
+            const password = document.getElementById('videoPasswordInput').value;
+            const passwordScreen = document.getElementById('videoPasswordScreen');
+            const videoContent = document.getElementById('videoContent');
+            const passwordError = document.getElementById('videoPasswordError');
+
+            if (password === 'gru') {
+                passwordScreen.style.display = 'none';
+                videoContent.style.display = 'block';
+                localStorage.setItem('isVideoAuthenticated', 'true');
+                loadVideos();
+                setupRealtimeVideos();
+            } else {
+                passwordError.style.display = 'block';
+            }
+        }
+
+        // Função para verificar autenticação dos vídeos
+        function checkVideoAuth() {
+            const isAuthenticated = localStorage.getItem('isVideoAuthenticated') === 'true';
+            const passwordScreen = document.getElementById('videoPasswordScreen');
+            const videoContent = document.getElementById('videoContent');
+
+            if (isAuthenticated) {
+                passwordScreen.style.display = 'none';
+                videoContent.style.display = 'block';
+                loadVideos();
+                setupRealtimeVideos();
+            }
+        }
+
+        // Função para carregar vídeos
+        function loadVideos() {
+            const videoGrid = document.getElementById('videoGrid');
+            
+            db.collection('videos')
+                .orderBy('date', 'desc')
+                .get()
+                .then((querySnapshot) => {
+                    if (querySnapshot.empty) {
+                        videoGrid.innerHTML = '<div class="empty-state">Nenhum vídeo ainda... Seja o primeiro a enviar!</div>';
+                        return;
+                    }
+                    
+                    videoGrid.innerHTML = '';
+                    querySnapshot.forEach((doc) => {
+                        const video = doc.data();
+                        const videoElement = document.createElement('div');
+                        videoElement.className = 'video-item';
+                        videoElement.innerHTML = `
+                            <video controls>
+                                <source src="${video.url}" type="video/mp4">
+                                Seu navegador não suporta o elemento de vídeo.
+                            </video>
+                            <div class="video-meta">Enviado por: ${video.sender} • ${timeAgo(video.date.toDate())}</div>
+                        `;
+                        videoGrid.appendChild(videoElement);
+                    });
+                })
+                .catch(error => {
+                    console.error("Erro ao carregar vídeos: ", error);
+                    videoGrid.innerHTML = '<div class="empty-state">Erro ao carregar vídeos. Tente novamente.</div>';
+                });
+        }
+
+        // Configuração de atualização em tempo real dos vídeos
+        function setupRealtimeVideos() {
+            console.log('Configurando atualização em tempo real dos vídeos...');
+            
+            db.collection('videos')
+                .orderBy('date', 'desc')
+                .onSnapshot((snapshot) => {
+                    console.log('Recebida atualização de vídeos do Firebase');
+                    
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === "added") {
+                            console.log('Novo vídeo recebido:', change.doc.data());
+                            const video = change.doc.data();
+                            const videoGrid = document.getElementById('videoGrid');
+                            
+                            const videoElement = document.createElement('div');
+                            videoElement.className = 'video-item new-item-animation';
+                            videoElement.innerHTML = `
+                                <video controls>
+                                    <source src="${video.url}" type="video/mp4">
+                                    Seu navegador não suporta o elemento de vídeo.
+                                </video>
+                                <div class="video-meta">Enviado por: ${video.sender} • ${timeAgo(video.date.toDate())}</div>
+                            `;
+
+                            if (videoGrid.firstChild) {
+                                videoGrid.insertBefore(videoElement, videoGrid.firstChild);
+                            } else {
+                                videoGrid.appendChild(videoElement);
+                            }
+                        }
+                    });
+                }, (error) => {
+                    console.error('Erro na atualização em tempo real dos vídeos:', error);
+                });
+        }
+
+        // Função para enviar vídeo
+        document.getElementById('videoInput').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Verificar tamanho do arquivo (máximo 50MB)
+            if (file.size > 50 * 1024 * 1024) {
+                showMessage('O vídeo deve ter no máximo 50MB!', 'error');
+                return;
+            }
+
+            try {
+                const sender = document.getElementById('remetente').value.trim() || 'Anônimo';
+                const storageRef = storage.ref(`videos/${Date.now()}_${file.name}`);
+                await storageRef.put(file);
+                const url = await storageRef.getDownloadURL();
+
+                await db.collection('videos').add({
+                    url: url,
+                    sender: sender,
+                    date: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                showMessage('Vídeo enviado com sucesso!', 'success');
+                e.target.value = ''; // Limpar input
+            } catch (error) {
+                console.error("Erro ao enviar vídeo: ", error);
+                showMessage('Erro ao enviar vídeo. Tente novamente.', 'error');
+            }
+        });
+
+        function showContentTab(tabName) {
+            // Esconder todas as seções de conteúdo
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remover classe active de todos os botões
+            document.querySelectorAll('.content-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Mostrar a seção selecionada
+            document.getElementById(tabName + 'Content').classList.add('active');
+            
+            // Adicionar classe active ao botão selecionado
+            event.target.classList.add('active');
+        }
+
+        // Configuração de atualização em tempo real
+        function setupRealtimeGossips() {
+            console.log('Configurando atualização em tempo real...');
+            
+            db.collection('gossips')
+                .orderBy('date', 'desc')
+                .onSnapshot((snapshot) => {
+                    console.log('Recebida atualização do Firebase');
+                    
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === "added") {
+                            console.log('Nova fofoca recebida:', change.doc.data());
+                            const gossip = change.doc.data();
+                            const gossipList = document.getElementById('gossipList');
+                            
+                            if (!gossipList) {
+                                console.error('Elemento gossipList não encontrado!');
+                                return;
+                            }
+                            
+                            const gossipElement = document.createElement('div');
+                            gossipElement.className = 'gossip-item new-item-animation';
+                            gossipElement.innerHTML = `
+                                <p>"${gossip.message}"</p>
+                                <div class="gossip-meta">De: ${gossip.sender} • ${timeAgo(gossip.date.toDate())}</div>
+                            `;
+
+                            if (gossipList.firstChild) {
+                                gossipList.insertBefore(gossipElement, gossipList.firstChild);
+                            } else {
+                                gossipList.appendChild(gossipElement);
+                            }
+                        }
+                    });
+                }, (error) => {
+                    console.error('Erro na atualização em tempo real:', error);
+                });
         }
     </script>
 </body>
